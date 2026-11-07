@@ -99,9 +99,13 @@ export async function getDb(): Promise<DatabaseClient> {
   }
 
   // Attempt real PostgreSQL connection
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isLocalDb = config.database.url.includes('localhost') || config.database.url.includes('127.0.0.1');
+
   const pool = new Pool({
     connectionString: config.database.url,
-    connectionTimeoutMillis: 2000,
+    ssl: (isProduction && !isLocalDb) ? { rejectUnauthorized: false } : undefined,
+    connectionTimeoutMillis: 10000,
     max: 10,
     idleTimeoutMillis: 30000,
   });

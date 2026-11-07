@@ -3,6 +3,7 @@ import { config } from './config/env';
 import { getDb } from './config/db';
 import { getCache } from './config/redis';
 import { seedSampleAgents } from './db/seed';
+import { runMigrations } from './db/migrate';
 
 async function bootstrap() {
   const app = createApp();
@@ -16,6 +17,14 @@ async function bootstrap() {
   const cache = getCache();
   const cacheStats = await cache.getStats();
   console.log(`[Bootstrap] Cache ready: ${cacheStats.type} (Status: ${cacheStats.status})`);
+
+  // Auto-run schema migrations
+  try {
+    console.log('[Bootstrap] Checking / applying database migrations...');
+    await runMigrations();
+  } catch (err: any) {
+    console.warn('[Bootstrap] Migration check note:', err.message);
+  }
 
   // Auto-seed if database is currently empty
   try {
