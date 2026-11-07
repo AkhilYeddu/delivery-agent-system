@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #FAF8F5;
+    color: #261B12;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Smooth creamy scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F5EFEB;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #D5BEA8;
+    border-radius: 9999px;
+    border: 2px solid #F5EFEB;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #B59E7E;
+  }
+}
+
+@layer utilities {
+  .creamy-card {
+    background: #FFFFFF;
+    border: 1px solid #EDE4D8;
+    box-shadow: 0 4px 20px -2px rgba(90, 65, 45, 0.05);
+    border-radius: 1.25rem;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .creamy-card:hover {
+    box-shadow: 0 10px 30px -4px rgba(90, 65, 45, 0.09);
+    border-color: #DFD3C3;
+  }
+
+  .creamy-input {
+    background: #FFFDF9;
+    border: 1px solid #E1D3C1;
+    color: #261B12;
+    border-radius: 0.875rem;
+    padding: 0.625rem 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .creamy-input:focus {
+    outline: none;
+    background: #FFFFFF;
+    border-color: #C7621B;
+    box-shadow: 0 0 0 3px rgba(199, 98, 27, 0.15);
+  }
+
+  .creamy-btn-primary {
+    background: linear-gradient(135deg, #DF7528 0%, #C7621B 100%);
+    color: #FFFFFF;
+    font-weight: 600;
+    border-radius: 0.875rem;
+    padding: 0.625rem 1.25rem;
+    box-shadow: 0 4px 14px rgba(199, 98, 27, 0.25);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .creamy-btn-primary:hover {
+    background: linear-gradient(135deg, #EA8032 0%, #B85816 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(199, 98, 27, 0.32);
+  }
+
+  .creamy-btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .creamy-btn-secondary {
+    background: #F5EFEB;
+    color: #463625;
+    border: 1px solid #E1D3C1;
+    font-weight: 500;
+    border-radius: 0.875rem;
+    padding: 0.625rem 1.25rem;
+    transition: all 0.2s ease;
+  }
+
+  .creamy-btn-secondary:hover {
+    background: #EDE4D8;
+    color: #261B12;
+    border-color: #CEBC9F;
+  }
+}

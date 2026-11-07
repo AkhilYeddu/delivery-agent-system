@@ -1,0 +1,34 @@
+{
+  "name": "delivery-agent-management-system",
+  "version": "1.0.0",
+  "description": "Enterprise delivery agent management system with Node.js, PostgreSQL, Redis caching, and a smooth creamy UI.",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"bgYellow.bold,bgCyan.bold\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build",
+    "test": "cd backend && npm run test",
+    "test:coverage": "cd backend && npm run test:coverage",
+    "db:migrate": "cd backend && npm run db:migrate",
+    "db:seed": "cd backend && npm run db:seed",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "keywords": [
+    "delivery-agent",
+    "nodejs",
+    "express",
+    "postgresql",
+    "redis",
+    "cache",
+    "react",
+    "vite",
+    "tailwind"
+  ],
+  "author": "Candidate Developer",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
