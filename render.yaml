@@ -32,5 +32,5 @@ databases:
   # ----------------------------------------------------------------------------
   - name: swiftdispatch-db
     databaseName: delivery_db
-    user: postgres
+    user: deliveryuser
     plan: free

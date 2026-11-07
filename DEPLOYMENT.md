@@ -71,7 +71,7 @@ If you prefer configuring via the Render UI:
 1. Click **New +** > **PostgreSQL**.
 2. Name: `swiftdispatch-db`.
 3. Database: `delivery_db`.
-4. User: `postgres`.
+4. User: `deliveryuser`.
 5. Plan: **Free**.
 6. Click **Create Database**.
 7. Copy the **Internal Database URL** (e.g., `postgresql://postgres:password@dpg-...:5432/delivery_db`).
