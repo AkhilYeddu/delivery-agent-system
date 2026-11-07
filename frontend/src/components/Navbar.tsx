@@ -54,3 +54,4 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreate, onRefresh, isRefre
     </header>
   );
 };
+

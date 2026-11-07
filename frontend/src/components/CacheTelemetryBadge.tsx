@@ -113,3 +113,4 @@ export const CacheTelemetryBadge: React.FC<CacheTelemetryBadgeProps> = ({
     </div>
   );
 };
+

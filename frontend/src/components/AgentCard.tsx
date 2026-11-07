@@ -101,3 +101,4 @@ export const AgentCard: React.FC<AgentCardProps> = ({ agent, onView, onEdit, onD
     </div>
   );
 };
+

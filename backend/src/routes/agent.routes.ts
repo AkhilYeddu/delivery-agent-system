@@ -35,3 +35,4 @@ router.patch('/:id', validateRequest({ body: UpdateAgentSchema }), AgentControll
 router.delete('/:id', AgentController.deleteAgent);
 
 export default router;
+

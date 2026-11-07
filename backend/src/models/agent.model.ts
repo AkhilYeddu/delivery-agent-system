@@ -63,3 +63,4 @@ export const AgentQuerySchema = z.object({
 export type CreateAgentInput = z.infer<typeof CreateAgentSchema>;
 export type UpdateAgentInput = z.infer<typeof UpdateAgentSchema>;
 export type AgentQueryParams = z.infer<typeof AgentQuerySchema>;
+

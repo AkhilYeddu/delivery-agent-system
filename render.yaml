@@ -1,0 +1,36 @@
+services:
+  # ----------------------------------------------------------------------------
+  # Backend REST API Service
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: swiftdispatch-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm run db:migrate:prod && npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: swiftdispatch-db
+          property: connectionString
+      - key: USE_PGLITE_FALLBACK
+        value: "true"
+      - key: USE_MEMORY_CACHE_FALLBACK
+        value: "true"
+
+databases:
+  # ----------------------------------------------------------------------------
+  # Managed PostgreSQL Database
+  # ----------------------------------------------------------------------------
+  - name: swiftdispatch-db
+    databaseName: delivery_db
+    user: postgres
+    plan: free

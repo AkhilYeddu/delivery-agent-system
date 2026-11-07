@@ -31,3 +31,4 @@ Thumbs.db
 # Local database storage (PGlite / embedded data)
 .pgdata/
 data/
+

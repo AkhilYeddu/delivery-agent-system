@@ -8,8 +8,16 @@ import {
   CacheTelemetry,
 } from '../types/agent';
 
+const rawApiUrl = (import.meta.env.VITE_API_URL || '').trim();
+let computedBaseUrl = '/api';
+
+if (rawApiUrl) {
+  const cleaned = rawApiUrl.replace(/\/+$/, '');
+  computedBaseUrl = cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`;
+}
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: computedBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },

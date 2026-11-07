@@ -20,3 +20,4 @@ CREATE INDEX IF NOT EXISTS idx_delivery_agents_status ON delivery_agents(status)
 CREATE INDEX IF NOT EXISTS idx_delivery_agents_service_area ON delivery_agents(service_area);
 CREATE INDEX IF NOT EXISTS idx_delivery_agents_email ON delivery_agents(email);
 CREATE INDEX IF NOT EXISTS idx_delivery_agents_created_at ON delivery_agents(created_at DESC);
+

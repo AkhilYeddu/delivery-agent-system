@@ -221,3 +221,4 @@ export const AgentDetailModal: React.FC<AgentDetailModalProps> = ({
     </div>
   );
 };
+
