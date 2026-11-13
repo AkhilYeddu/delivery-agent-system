@@ -8,3 +8,4 @@ router.get('/cache/stats', AgentController.getCacheTelemetry);
 router.post('/cache/flush', AgentController.flushCache);
 
 module.exports = router;
+

@@ -105,3 +105,4 @@ export const CacheTelemetryBadge = ({
     </div>
   );
 };
+

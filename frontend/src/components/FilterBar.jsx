@@ -133,3 +133,4 @@ export const FilterBar = ({
     </div>
   );
 };
+

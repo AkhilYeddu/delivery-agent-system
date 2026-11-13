@@ -48,3 +48,4 @@ export const Navbar = ({ onOpenCreate, onRefresh, isRefreshing }) => {
     </header>
   );
 };
+

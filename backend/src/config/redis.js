@@ -237,3 +237,4 @@ function getCache() {
 module.exports = {
   getCache,
 };
+

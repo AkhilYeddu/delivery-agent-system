@@ -93,3 +93,4 @@ export const AgentCard = ({ agent, onView, onEdit, onDelete }) => {
     </div>
   );
 };
+
