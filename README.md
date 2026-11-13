@@ -6,7 +6,7 @@ An enterprise-grade full-stack web application for dispatchers and fleet manager
 
 ## 🌟 Highlights & Architecture
 
-- **Backend**: Node.js & Express with TypeScript, structured into clean Service-Controller-Model layers with strict Zod runtime request validation.
+- **Backend**: Node.js & Express, structured into clean Service-Controller-Model layers with strict Zod runtime request validation.
 - **Database**: PostgreSQL with transactional DDL schema, foreign key constraints, check constraints, and performance indexes.
 - **Caching Layer**: Redis Cache-Aside pattern with deterministic key namespacing, explicit invalidation on mutations (create/update/delete), TTL management, and `X-Cache: HIT / MISS` response headers.
 - **Fallback / Standalone Capability**: Can run against external PostgreSQL and Redis instances (via `docker compose up -d`) OR run standalone with embedded in-memory PostgreSQL (`pg-mem`) and fallback cache so evaluators can run the project immediately with zero external dependencies.
@@ -19,11 +19,11 @@ An enterprise-grade full-stack web application for dispatchers and fleet manager
 
 | Component | Technology | Rationale |
 | :--- | :--- | :--- |
-| **Backend Runtime** | Node.js (v20+) & TypeScript | High-throughput asynchronous I/O, strong type safety, and fast execution. |
+| **Backend Runtime** | Node.js (v20+) | High-throughput asynchronous I/O and fast execution. |
 | **HTTP Framework** | Express 4.x with Morgan & CORS | Lightweight, unopinionated, enterprise REST API standard. |
 | **Database** | PostgreSQL 16 | ACID-compliant relational storage, strict constraints, robust indexing, and schema migrations. |
 | **Cache** | Redis 7 (via `ioredis`) | Microsecond-latency key-value storage for read-heavy fleet queries, reduces DB load by >90%. |
-| **Validation** | Zod | Runtime type inference and strict validation for query parameters and JSON payloads. |
+| **Validation** | Zod | Runtime schema validation for query parameters and JSON payloads. |
 | **Frontend** | React 18, Vite, Tailwind CSS | Instant HMR, buttery smooth velvety transitions, and creamy palette typography. |
 | **Testing** | Jest & Supertest | Automated integration testing for HTTP APIs, error edge cases, and cache consistency. |
 
@@ -41,49 +41,47 @@ delivery-agent-system/
 ├── backend/                        # Node.js REST API
 │   ├── src/
 │   │   ├── config/
-│   │   │   ├── env.ts              # Centralized environment configuration
-│   │   │   ├── db.ts               # PostgreSQL connection pool with fallback
-│   │   │   └── redis.ts            # Redis client & telemetry with memory standby
+│   │   │   ├── env.js              # Centralized environment configuration
+│   │   │   ├── db.js               # PostgreSQL connection pool with fallback
+│   │   │   └── redis.js            # Redis client & telemetry with memory standby
 │   │   ├── controllers/
-│   │   │   ├── agent.controller.ts # Request handlers & header setting
-│   │   │   └── ...
+│   │   │   └── agent.controller.js # Request handlers & header setting
 │   │   ├── services/
-│   │   │   └── agent.service.ts    # Core CRUD logic & Cache Invalidation algorithms
+│   │   │   └── agent.service.js    # Core CRUD logic & Cache Invalidation algorithms
 │   │   ├── models/
-│   │   │   └── agent.model.ts      # TypeScript interfaces & Zod validation schemas
+│   │   │   └── agent.model.js      # Zod validation schemas
 │   │   ├── routes/
-│   │   │   ├── agent.routes.ts     # CRUD endpoints
-│   │   │   └── telemetry.routes.ts # Health & cache telemetry endpoints
+│   │   │   ├── agent.routes.js     # CRUD endpoints
+│   │   │   └── telemetry.routes.js # Health & cache telemetry endpoints
 │   │   ├── db/
 │   │   │   ├── schema.sql          # PostgreSQL DDL schema & indexes
-│   │   │   ├── migrate.ts          # Migration runner
-│   │   │   └── seed.ts             # 10 realistic delivery agents seed data
+│   │   │   ├── migrate.js          # Migration runner
+│   │   │   └── seed.js             # 10 realistic delivery agents seed data
 │   │   ├── middlewares/
-│   │   │   ├── error.middleware.ts # Standardized error formatting
-│   │   │   └── validate.middleware.ts # Zod request validation
+│   │   │   ├── error.middleware.js  # Standardized error formatting
+│   │   │   └── validate.middleware.js # Zod request validation
 │   │   └── tests/
-│   │       ├── agent.test.ts       # 8 CRUD integration tests
-│   │       └── cache.test.ts       # 4 Redis Cache-Aside & Invalidation tests
-│   ├── tsconfig.json
+│   │       ├── agent.test.js       # 8 CRUD integration tests
+│   │       └── cache.test.js       # 4 Redis Cache-Aside & Invalidation tests
 │   └── package.json
 │
 └── frontend/                       # Smooth & Creamy React UI
     ├── src/
     │   ├── components/
-    │   │   ├── Navbar.tsx          # Creamy header with actions
-    │   │   ├── CacheTelemetryBadge.tsx # Real-time Redis cache hit/miss monitor & flush tool
-    │   │   ├── StatsOverview.tsx   # Fleet KPI cards (total, active, on delivery, rating)
-    │   │   ├── FilterBar.tsx       # Search, status pills, area filter, sort & view toggle
-    │   │   ├── AgentTable.tsx      # Smooth data table with pagination & quick actions
-    │   │   ├── AgentCard.tsx       # Grid view card presentation
-    │   │   ├── AgentFormModal.tsx  # Create & Edit agent modal with client validation
-    │   │   ├── AgentDetailModal.tsx# Comprehensive agent profile drawer with cache status
-    │   │   ├── DeleteConfirmModal.tsx # Safe deletion prompt
-    │   │   └── Toast.tsx           # Velvety feedback toasts
-    │   ├── services/api.ts         # Axios client with cache header interception
+    │   │   ├── Navbar.jsx          # Creamy header with actions
+    │   │   ├── CacheTelemetryBadge.jsx # Real-time Redis cache hit/miss monitor & flush tool
+    │   │   ├── StatsOverview.jsx   # Fleet KPI cards (total, active, on delivery, rating)
+    │   │   ├── FilterBar.jsx       # Search, status pills, area filter, sort & view toggle
+    │   │   ├── AgentTable.jsx      # Smooth data table with pagination & quick actions
+    │   │   ├── AgentCard.jsx       # Grid view card presentation
+    │   │   ├── AgentFormModal.jsx  # Create & Edit agent modal with client validation
+    │   │   ├── AgentDetailModal.jsx# Comprehensive agent profile drawer with cache status
+    │   │   ├── DeleteConfirmModal.jsx # Safe deletion prompt
+    │   │   └── Toast.jsx           # Velvety feedback toasts
+    │   ├── services/api.js         # Axios client with cache header interception
     │   └── index.css               # Creamy custom colors & styling
     ├── tailwind.config.js
-    ├── vite.config.ts
+    ├── vite.config.js
     └── package.json
 ```
 
@@ -323,4 +321,3 @@ USE_MEMORY_CACHE_FALLBACK=true
 - [x] Smooth and creamy frontend UI with React, Vite, and Tailwind CSS.
 - [x] Automated test suite passing 100% of tests.
 - [x] README with complete setup, run, and evaluation instructions.
-

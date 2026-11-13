@@ -86,7 +86,7 @@ If you prefer configuring via the Render UI:
    - **Root Directory**: `backend`
    - **Runtime**: `Node`
    - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm run db:migrate:prod && npm run start`
+   - **Start Command**: `npm run start`
    - **Plan**: `Free`
 4. Expand **Environment Variables** and add:
    - `NODE_ENV` = `production`
