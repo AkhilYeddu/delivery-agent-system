@@ -5,6 +5,12 @@ const { getDb, closeDb } = require('../config/db');
 async function runMigrations() {
   const db = await getDb();
 
+  // In-memory PostgreSQL (pg-mem) already initializes schema in getDb()
+  if (db.getType() === 'in-memory-postgres') {
+    console.log('[Migration] In-memory PostgreSQL engine schema ready.');
+    return;
+  }
+
   const possiblePaths = [
     path.resolve(__dirname, 'schema.sql'),
     path.resolve(__dirname, '../db/schema.sql'),

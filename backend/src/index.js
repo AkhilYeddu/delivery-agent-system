@@ -55,6 +55,16 @@ async function bootstrap() {
     `);
   });
 
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n⚠️  [Port Conflict] Port ${config.port} is already in use by another running process.`);
+      console.error(`   To free it on Windows, run: Stop-Process -Id (Get-NetTCPConnection -LocalPort ${config.port}).OwningProcess -Force\n`);
+    } else {
+      console.error('[Server Error]:', err);
+    }
+    process.exit(1);
+  });
+
   const shutdown = async () => {
     console.log('\n[Server] Gracefully shutting down...');
     server.close(async () => {
