@@ -6,68 +6,70 @@ const { config } = require('./env');
 
 let activeDb = null;
 
-class PgPoolClient {
-  constructor(pool) {
-    this.pool = pool;
+// --- PgPoolClient: wraps a real pg Pool ---
+
+function createPgPoolClient(pool) {
+  async function query(text, params) {
+    return pool.query(text, params);
   }
 
-  async query(text, params) {
-    return this.pool.query(text, params);
+  async function end() {
+    await pool.end();
   }
 
-  async end() {
-    await this.pool.end();
-  }
-
-  getType() {
+  function getType() {
     return 'postgres';
   }
 
-  async checkHealth() {
+  async function checkHealth() {
     const start = Date.now();
     try {
-      await this.pool.query('SELECT 1');
+      await pool.query('SELECT 1');
       return { isConnected: true, type: 'PostgreSQL Server', latencyMs: Date.now() - start };
     } catch {
       return { isConnected: false, type: 'PostgreSQL Server', latencyMs: Date.now() - start };
     }
   }
+
+  return { query, end, getType, checkHealth };
 }
 
-class PgMemClient {
-  constructor(memDb) {
-    this.memDb = memDb;
-    this.adapter = this.memDb.adapters.createPg();
-  }
+// --- PgMemClient: wraps an in-memory pg-mem instance ---
 
-  async query(text, params) {
-    const pool = new this.adapter.Pool();
+function createPgMemClient(memDb) {
+  const adapter = memDb.adapters.createPg();
+
+  async function query(text, params) {
+    const pool = new adapter.Pool();
     try {
-      const res = await pool.query(text, params);
-      return res;
+      return await pool.query(text, params);
     } finally {
       await pool.end();
     }
   }
 
-  async end() {
+  async function end() {
     // In-memory db doesn't require socket shutdown
   }
 
-  getType() {
+  function getType() {
     return 'in-memory-postgres';
   }
 
-  async checkHealth() {
+  async function checkHealth() {
     const start = Date.now();
     try {
-      await this.query('SELECT 1');
+      await query('SELECT 1');
       return { isConnected: true, type: 'In-Memory PostgreSQL Engine', latencyMs: Date.now() - start };
     } catch {
       return { isConnected: false, type: 'In-Memory PostgreSQL Engine', latencyMs: Date.now() - start };
     }
   }
+
+  return { query, end, getType, checkHealth };
 }
+
+// --- getDb: singleton factory ---
 
 async function getDb() {
   if (activeDb) {
@@ -77,7 +79,7 @@ async function getDb() {
   // In test environment without explicit external DB override, prefer in-memory for speed and isolation
   if (process.env.NODE_ENV === 'test' && !process.env.FORCE_EXTERNAL_DB) {
     const memDb = newDb();
-    activeDb = new PgMemClient(memDb);
+    activeDb = createPgMemClient(memDb);
     const schemaPath = path.resolve(__dirname, '../db/schema.sql');
     if (fs.existsSync(schemaPath)) {
       const sql = fs.readFileSync(schemaPath, 'utf-8');
@@ -103,7 +105,7 @@ async function getDb() {
     await client.query('SELECT 1');
     client.release();
     console.log('[Database] Connected successfully to external PostgreSQL server.');
-    activeDb = new PgPoolClient(pool);
+    activeDb = createPgPoolClient(pool);
     return activeDb;
   } catch (err) {
     await pool.end().catch(() => {});
@@ -112,7 +114,7 @@ async function getDb() {
     if (config.database.usePgliteFallback) {
       console.log('[Database] Activating fast In-Memory PostgreSQL engine for standalone operation.');
       const memDb = newDb();
-      activeDb = new PgMemClient(memDb);
+      activeDb = createPgMemClient(memDb);
 
       // Auto-run schema migrations on fallback database
       try {
@@ -144,4 +146,3 @@ module.exports = {
   getDb,
   closeDb,
 };
-
