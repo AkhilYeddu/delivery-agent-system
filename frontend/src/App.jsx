@@ -34,7 +34,6 @@ export const App = () => {
   // Loading & cache telemetry
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastQueryMeta, setLastQueryMeta] = useState(null);
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -72,7 +71,6 @@ export const App = () => {
 
         setAgents(res.data);
         setPagination(res.pagination);
-        setLastQueryMeta(res.meta);
       } catch (err) {
         addToast('error', 'Failed to load delivery agents', err.message);
       } finally {
@@ -207,8 +205,6 @@ export const App = () => {
         {/* Redis Cache Telemetry Panel */}
         <CacheTelemetryBadge
           telemetry={telemetry}
-          lastQueryCache={lastQueryMeta?.fromCache}
-          lastLatencyMs={lastQueryMeta?.durationMs}
           onFlushCache={handleFlushCache}
         />
 

@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { Database, Zap, Trash2 } from 'lucide-react';
+import { Zap, Trash2 } from 'lucide-react';
 
 export const CacheTelemetryBadge = ({
   telemetry,
-  lastQueryCache,
-  lastLatencyMs,
   onFlushCache,
 }) => {
   const [isFlushing, setIsFlushing] = useState(false);
@@ -65,33 +63,8 @@ export const CacheTelemetryBadge = ({
         </div>
       </div>
 
-      {/* Query cache status & Flush cache button */}
-      <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-cream-100">
-        {lastQueryCache !== undefined && (
-          <div
-            className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl border font-medium ${
-              lastQueryCache
-                ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
-                : 'bg-cream-100/80 border-cream-200 text-cream-800'
-            }`}
-          >
-            {lastQueryCache ? (
-              <>
-                <Zap className="w-3.5 h-3.5 text-emerald-600 fill-emerald-600" />
-                <span>Last Query: <strong>Redis HIT</strong></span>
-              </>
-            ) : (
-              <>
-                <Database className="w-3.5 h-3.5 text-cream-700" />
-                <span>Last Query: <strong>PostgreSQL MISS</strong></span>
-              </>
-            )}
-            {lastLatencyMs !== undefined && (
-              <span className="text-[11px] opacity-75">({lastLatencyMs}ms)</span>
-            )}
-          </div>
-        )}
-
+      {/* Flush cache button */}
+      <div className="flex items-center gap-3 w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0 border-cream-100">
         <button
           onClick={handleFlush}
           disabled={isFlushing}
