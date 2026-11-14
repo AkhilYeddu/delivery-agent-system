@@ -1,6 +1,5 @@
 const { getDb } = require('../config/db');
 const { getCache } = require('../config/redis');
-const { config } = require('../config/env');
 
 function generateAgentId() {
   const timestampPart = Date.now().toString(36).toUpperCase();
@@ -101,7 +100,7 @@ async function getAgents(params) {
   };
 
   // 3. Write to Redis cache with TTL
-  await cache.set(cacheKey, JSON.stringify(result), config.redis.ttlList);
+  await cache.set(cacheKey, JSON.stringify(result), 300); // 5 minutes
 
   return result;
 }
@@ -136,7 +135,7 @@ async function getAgentById(id) {
   const agent = result.rows[0];
 
   // 3. Populate Redis cache
-  await cache.set(cacheKey, JSON.stringify(agent), config.redis.ttlDetail);
+  await cache.set(cacheKey, JSON.stringify(agent), 600); // 10 minutes
 
   return { agent, fromCache: false };
 }
@@ -184,7 +183,7 @@ async function createAgent(input) {
   await invalidateRelatedCaches(newAgent.id);
 
   // Warm individual cache
-  await cache.set(`agents:detail:${newAgent.id}`, JSON.stringify(newAgent), config.redis.ttlDetail);
+  await cache.set(`agents:detail:${newAgent.id}`, JSON.stringify(newAgent), 600);
 
   return newAgent;
 }
@@ -262,7 +261,7 @@ async function updateAgent(id, input) {
 
   // Warm cache with updated entity
   const cache = getCache();
-  await cache.set(`agents:detail:${id}`, JSON.stringify(updatedAgent), config.redis.ttlDetail);
+  await cache.set(`agents:detail:${id}`, JSON.stringify(updatedAgent), 600);
 
   return updatedAgent;
 }
@@ -339,7 +338,7 @@ async function getStats() {
     calculatedAt: new Date().toISOString(),
   };
 
-  await cache.set(cacheKey, JSON.stringify(stats), config.redis.ttlStats);
+  await cache.set(cacheKey, JSON.stringify(stats), 180); // 3 minutes
 
   return { stats, fromCache: false };
 }

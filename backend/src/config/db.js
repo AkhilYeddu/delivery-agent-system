@@ -1,15 +1,18 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
+require('dotenv').config();
+
 const { Pool } = require('pg');
-const { config } = require('./env');
 
 let pool = null;
 
 function createPool() {
+  const dbUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/delivery_db';
   const isProduction = process.env.NODE_ENV === 'production';
-  const isLocalDb =
-    config.database.url.includes('localhost') || config.database.url.includes('127.0.0.1');
+  const isLocalDb = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
 
   return new Pool({
-    connectionString: config.database.url,
+    connectionString: dbUrl,
     ssl: isProduction && !isLocalDb ? { rejectUnauthorized: false } : undefined,
     connectionTimeoutMillis: 5000,
     max: 10,

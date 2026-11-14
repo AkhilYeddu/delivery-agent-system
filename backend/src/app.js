@@ -1,7 +1,10 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const { config } = require('./config/env');
 const agentRoutes = require('./routes/agent.routes');
 const telemetryRoutes = require('./routes/telemetry.routes');
 const { notFoundHandler, errorHandler } = require('./middlewares/error.middleware');
@@ -22,7 +25,7 @@ const createApp = () => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  if (config.nodeEnv !== 'test') {
+  if (process.env.NODE_ENV !== 'test') {
     app.use(morgan('dev'));
   }
 
