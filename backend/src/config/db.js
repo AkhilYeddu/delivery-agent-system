@@ -11,7 +11,7 @@ function createPool() {
   return new Pool({
     connectionString: config.database.url,
     ssl: isProduction && !isLocalDb ? { rejectUnauthorized: false } : undefined,
-    connectionTimeoutMillis: 10000,
+    connectionTimeoutMillis: 5000,
     max: 10,
     idleTimeoutMillis: 30000,
   });
@@ -28,8 +28,10 @@ async function getDb() {
     },
 
     async end() {
-      await pool.end();
-      pool = null;
+      if (pool) {
+        await pool.end();
+        pool = null;
+      }
     },
 
     getType() {
@@ -50,7 +52,7 @@ async function getDb() {
           isConnected: false,
           type: 'PostgreSQL',
           latencyMs: Date.now() - start,
-          error: err.message,
+          error: err.message || err.code || 'Could not connect to PostgreSQL server',
         };
       }
     },

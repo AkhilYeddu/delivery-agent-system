@@ -8,9 +8,13 @@ let redisClient = null;
 function getRedisClient() {
   if (!redisClient) {
     redisClient = new Redis(config.redis.url, {
-      maxRetriesPerRequest: 3,
-      connectTimeout: 5000,
-      retryStrategy: (times) => Math.min(times * 500, 3000),
+      maxRetriesPerRequest: 1,
+      connectTimeout: 2000,
+      enableOfflineQueue: false,
+      retryStrategy: (times) => {
+        if (times > 3) return null; // Stop reconnect retries if Redis is not running
+        return 2000;
+      },
       lazyConnect: false,
     });
 
@@ -19,7 +23,10 @@ function getRedisClient() {
     });
 
     redisClient.on('error', (err) => {
-      console.error(`[Redis] Connection error: ${err.message}`);
+      // Log connection error without crashing the process
+      if (err.code !== 'ECONNREFUSED') {
+        console.warn(`[Redis] Notice: ${err.message || err.code}`);
+      }
     });
   }
 
@@ -43,8 +50,7 @@ async function get(key) {
       recordMiss();
     }
     return val;
-  } catch (err) {
-    console.warn(`[Redis] get failed for key "${key}": ${err.message}`);
+  } catch (_err) {
     recordMiss();
     return null;
   }
@@ -58,16 +64,16 @@ async function set(key, value, ttlSeconds) {
     } else {
       await client.set(key, value);
     }
-  } catch (err) {
-    console.warn(`[Redis] set failed for key "${key}": ${err.message}`);
+  } catch (_err) {
+    // Non-blocking cache write failure
   }
 }
 
 async function del(key) {
   try {
     await getRedisClient().del(key);
-  } catch (err) {
-    console.warn(`[Redis] del failed for key "${key}": ${err.message}`);
+  } catch (_err) {
+    // Non-blocking
   }
 }
 
@@ -79,8 +85,7 @@ async function delByPattern(pattern) {
       await client.del(...keys);
     }
     return keys.length;
-  } catch (err) {
-    console.warn(`[Redis] delByPattern failed for pattern "${pattern}": ${err.message}`);
+  } catch (_err) {
     return 0;
   }
 }
@@ -88,8 +93,8 @@ async function delByPattern(pattern) {
 async function flush() {
   try {
     await getRedisClient().flushdb();
-  } catch (err) {
-    console.warn(`[Redis] flush failed: ${err.message}`);
+  } catch (_err) {
+    // Non-blocking
   }
 }
 
@@ -103,13 +108,15 @@ async function getStats() {
   const start = Date.now();
   let keysCount = 0;
   try {
-    keysCount = await getRedisClient().dbsize();
+    if (isReady()) {
+      keysCount = await getRedisClient().dbsize();
+    }
   } catch {
     keysCount = 0;
   }
 
   return {
-    status: isReady() ? 'connected' : 'connecting',
+    status: isReady() ? 'connected' : 'disconnected',
     type: 'Redis Server 7.x',
     hits: hitsCount,
     misses: missesCount,
@@ -125,7 +132,7 @@ function getCache() {
 
 async function closeRedis() {
   if (redisClient) {
-    await redisClient.quit();
+    await redisClient.quit().catch(() => {});
     redisClient = null;
   }
 }

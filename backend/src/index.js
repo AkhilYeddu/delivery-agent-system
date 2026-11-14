@@ -7,20 +7,22 @@ async function bootstrap() {
   const app = createApp();
 
   // Verify DB connection on startup
-  console.log('[Bootstrap] Connecting to PostgreSQL...');
+  console.log('[Bootstrap] Checking PostgreSQL connection...');
   const db = await getDb();
   const dbHealth = await db.checkHealth();
   if (!dbHealth.isConnected) {
-    console.error('[Bootstrap] Could not connect to PostgreSQL:', dbHealth.error);
-    process.exit(1);
+    console.warn(`\n⚠️  [Database Notice] Could not reach PostgreSQL (${dbHealth.error}).`);
+    console.warn(`   Target URL: ${config.database.url}`);
+    console.warn('   The HTTP API server will still start, but database operations will return 503 until PostgreSQL is reachable.\n');
+  } else {
+    console.log(`[Bootstrap] Database ready: ${dbHealth.type} (Latency: ${dbHealth.latencyMs}ms)`);
   }
-  console.log(`[Bootstrap] Database ready: ${dbHealth.type} (Latency: ${dbHealth.latencyMs}ms)`);
 
   // Verify Redis connection on startup
-  console.log('[Bootstrap] Connecting to Redis...');
+  console.log('[Bootstrap] Checking Redis connection...');
   const cache = getCache();
   const cacheStats = await cache.getStats();
-  console.log(`[Bootstrap] Cache ready: ${cacheStats.type} (Status: ${cacheStats.status})`);
+  console.log(`[Bootstrap] Cache status: ${cacheStats.type} (${cacheStats.status})`);
 
   // Start HTTP Server
   const server = app.listen(config.port, () => {

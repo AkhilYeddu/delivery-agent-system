@@ -6,8 +6,13 @@ const notFoundHandler = (req, res) => {
 };
 
 const errorHandler = (err, req, res, _next) => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Internal Server Error';
+
+  if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND' || err.code === 'EACCES') {
+    statusCode = 503;
+    message = `Database connection failed (${err.code}). Please ensure PostgreSQL is running and DATABASE_URL is configured.`;
+  }
 
   if (statusCode === 500) {
     console.error(`[Unhandled Error] ${req.method} ${req.url}:`, err);
@@ -24,4 +29,3 @@ module.exports = {
   notFoundHandler,
   errorHandler,
 };
-
