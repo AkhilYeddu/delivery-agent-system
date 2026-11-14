@@ -10,7 +10,6 @@ import { AgentDetailModal } from './components/AgentDetailModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { ToastContainer } from './components/Toast';
 import { agentApi } from './services/api';
-import { Sparkles } from 'lucide-react';
 
 export const App = () => {
   // Data state
@@ -173,17 +172,6 @@ export const App = () => {
     );
   };
 
-  // Seed sample data handler
-  const handleSeedDemo = async () => {
-    try {
-      await agentApi.seedDemoAgents();
-      addToast('success', 'Demo data loaded', 'Populated fleet with realistic delivery agents.');
-      await Promise.all([loadAgents(1), loadTelemetryAndStats()]);
-    } catch (err) {
-      addToast('error', 'Seeding failed', err.message);
-    }
-  };
-
   // Extract distinct service areas for filter dropdown
   const availableAreas = useMemo(() => {
     if (stats?.topAreas && stats.topAreas.length > 0) {
@@ -271,18 +259,6 @@ export const App = () => {
           </div>
         )}
 
-        {/* Quick Seed helper if zero agents */}
-        {!loading && agents.length === 0 && search === '' && status === 'all' && (
-          <div className="text-center py-8">
-            <button
-              onClick={handleSeedDemo}
-              className="creamy-btn-primary inline-flex items-center gap-2 text-xs font-semibold"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Load 10 Realistic Demo Agents</span>
-            </button>
-          </div>
-        )}
       </main>
 
       {/* Footer */}
