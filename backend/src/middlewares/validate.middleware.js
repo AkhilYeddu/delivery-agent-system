@@ -1,5 +1,3 @@
-const { ZodError } = require('zod');
-
 const validateRequest = (schema) => {
   return async (req, res, next) => {
     try {
@@ -14,12 +12,12 @@ const validateRequest = (schema) => {
       }
       next();
     } catch (error) {
-      if (error instanceof ZodError) {
+      if (error.errors && Array.isArray(error.errors)) {
         res.status(400).json({
           success: false,
           message: 'Validation failed for request parameters or payload.',
           errors: error.errors.map((e) => ({
-            field: e.path.join('.'),
+            field: e.field,
             message: e.message,
           })),
         });
@@ -33,4 +31,3 @@ const validateRequest = (schema) => {
 module.exports = {
   validateRequest,
 };
-

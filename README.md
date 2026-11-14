@@ -6,7 +6,7 @@ An enterprise-grade full-stack web application for dispatchers and fleet manager
 
 ## 🌟 Highlights & Architecture
 
-- **Backend**: Node.js & Express in modern JavaScript, structured into clean Service-Controller-Model functional modules with strict Zod runtime request validation.
+- **Backend**: Node.js & Express in modern JavaScript, structured into clean Service-Controller-Model functional modules with strict request validation using `validator`.
 - **Database**: PostgreSQL with transactional DDL schema (`schema.sql`), foreign key constraints, check constraints, and performance indexes.
 - **Caching Layer**: Redis Cache-Aside pattern with deterministic key namespacing, explicit invalidation on mutations (create/update/delete), TTL management, and `X-Cache: HIT / MISS` response headers. Supports live Redis servers (Docker, Upstash, Render) with a built-in resilient standby cache.
 - **Frontend**: Smooth and creamy UI built with React 18, Vite, and custom warm cream/caramel Tailwind styling, featuring live Redis telemetry, fleet statistics cards, table/grid views, debounced search, status filters, and instant action modals.
@@ -23,7 +23,7 @@ An enterprise-grade full-stack web application for dispatchers and fleet manager
 | **Database** | PostgreSQL 16 | ACID-compliant relational storage, strict constraints, robust indexing, and schema migrations. |
 | **Database Client** | `pg` (`pg.Pool`) | Native connection pooling with SSL support for cloud databases. |
 | **Cache Client** | Redis 7 (`ioredis`) | Microsecond-latency key-value storage for read-heavy fleet queries, reduces DB load by >90%. |
-| **Validation** | Zod | Runtime schema validation for query parameters and JSON payloads. |
+| **Validation** | `validator` | String sanitization and schema validation for query parameters and JSON payloads. |
 | **Frontend** | React 18, Vite, Tailwind CSS | Instant HMR, buttery smooth velvety transitions, and creamy palette typography. |
 | **Testing** | Jest & Supertest | Automated integration testing for HTTP APIs, error edge cases, and cache consistency. |
 
@@ -52,7 +52,7 @@ delivery-agent-system/
 │   │   ├── services/
 │   │   │   └── agent.service.js    # Core CRUD logic & Cache Invalidation algorithms
 │   │   ├── models/
-│   │   │   └── agent.model.js      # Zod validation schemas
+│   │   │   └── agent.model.js      # Request validation schemas (validator)
 │   │   ├── routes/
 │   │   │   ├── agent.routes.js     # CRUD endpoints
 │   │   │   └── telemetry.routes.js # Health & cache telemetry endpoints
@@ -61,7 +61,7 @@ delivery-agent-system/
 │   │   │   └── seed.js             # 10 realistic delivery agents seed data
 │   │   ├── middlewares/
 │   │   │   ├── error.middleware.js  # Standardized error formatting
-│   │   │   └── validate.middleware.js # Zod request validation
+│   │   │   └── validate.middleware.js # Request validation middleware
 │   │   └── tests/
 │   │       ├── agent.test.js       # 8 CRUD integration tests
 │   │       └── cache.test.js       # 4 Redis Cache-Aside & Invalidation tests
