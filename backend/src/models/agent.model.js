@@ -127,37 +127,9 @@ function validateAgentQuery(data = {}) {
   return { isValid: true, errors: [], value };
 }
 
-// Wrap helper for validate.middleware.js parseAsync compatibility
-function createValidator(validateFn) {
-  return {
-    validate: validateFn,
-    parseAsync: async (data) => {
-      const { isValid, errors, value } = validateFn(data);
-      if (!isValid) {
-        const error = new Error('Validation failed');
-        error.errors = errors;
-        throw error;
-      }
-      return value;
-    },
-    parse: (data) => {
-      const { isValid, errors, value } = validateFn(data);
-      if (!isValid) {
-        const error = new Error('Validation failed');
-        error.errors = errors;
-        throw error;
-      }
-      return value;
-    },
-  };
-}
-
 module.exports = {
   VALID_STATUSES,
   VALID_VEHICLE_TYPES,
-  CreateAgentSchema: createValidator(validateCreateAgent),
-  UpdateAgentSchema: createValidator(validateUpdateAgent),
-  AgentQuerySchema: createValidator(validateAgentQuery),
   validateCreateAgent,
   validateUpdateAgent,
   validateAgentQuery,

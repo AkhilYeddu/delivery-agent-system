@@ -1,23 +1,22 @@
 const { Router } = require('express');
 const { AgentController } = require('../controllers/agent.controller');
-const { validateRequest } = require('../middlewares/validate.middleware');
 const {
-  CreateAgentSchema,
-  UpdateAgentSchema,
-  AgentQuerySchema,
-} = require('../models/agent.model');
+  validateCreate,
+  validateUpdate,
+  validateQuery,
+} = require('../middlewares/validate.middleware');
 
 const router = Router();
 
 // Stats route (placed before :id to prevent param collision)
 router.get('/stats', AgentController.getStats);
 
-// Standard CRUD endpoints
-router.get('/', validateRequest({ query: AgentQuerySchema }), AgentController.getAgents);
+// Standard CRUD endpoints with direct Express middlewares
+router.get('/', validateQuery, AgentController.getAgents);
 router.get('/:id', AgentController.getAgentById);
-router.post('/', validateRequest({ body: CreateAgentSchema }), AgentController.createAgent);
-router.put('/:id', validateRequest({ body: UpdateAgentSchema }), AgentController.updateAgent);
-router.patch('/:id', validateRequest({ body: UpdateAgentSchema }), AgentController.updateAgent);
+router.post('/', validateCreate, AgentController.createAgent);
+router.put('/:id', validateUpdate, AgentController.updateAgent);
+router.patch('/:id', validateUpdate, AgentController.updateAgent);
 router.delete('/:id', AgentController.deleteAgent);
 
 module.exports = router;
