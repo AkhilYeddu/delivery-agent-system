@@ -6,12 +6,11 @@ An enterprise-grade full-stack web application for dispatchers and fleet manager
 
 ## 🌟 Highlights & Architecture
 
-- **Backend**: Node.js & Express, structured into clean Service-Controller-Model layers with strict Zod runtime request validation.
+- **Backend**: Node.js & Express in modern JavaScript, structured into clean Service-Controller-Model functional modules with strict Zod runtime request validation.
 - **Database**: PostgreSQL with transactional DDL schema (`schema.sql`), foreign key constraints, check constraints, and performance indexes.
-- **Caching Layer**: Redis Cache-Aside pattern with deterministic key namespacing, explicit invalidation on mutations (create/update/delete), TTL management, and `X-Cache: HIT / MISS` response headers.
-- **Production Architecture**: Direct connection pooling to PostgreSQL via `pg` and high-performance Redis caching via `ioredis`. Run locally with Docker (`npm run docker:up`) or against cloud-managed instances (e.g. Render PostgreSQL + Upstash Redis).
-- **Frontend**: Smooth and creamy UI built with React, Vite, and custom warm cream/caramel Tailwind styling, featuring live Redis telemetry, fleet statistics cards, table/grid views, debounced search, status filters, and instant action modals.
-- **Automated Tests**: Comprehensive Jest & Supertest integration suite verifying all CRUD operations, input validations, conflict handling, and Redis cache invalidation behaviors.
+- **Caching Layer**: Redis Cache-Aside pattern with deterministic key namespacing, explicit invalidation on mutations (create/update/delete), TTL management, and `X-Cache: HIT / MISS` response headers. Supports live Redis servers (Docker, Upstash, Render) with a built-in resilient standby cache.
+- **Frontend**: Smooth and creamy UI built with React 18, Vite, and custom warm cream/caramel Tailwind styling, featuring live Redis telemetry, fleet statistics cards, table/grid views, debounced search, status filters, and instant action modals.
+- **Automated Tests**: Comprehensive Jest & Supertest integration suite verifying all CRUD operations, input validations, conflict handling, and Redis cache invalidation behaviors directly against PostgreSQL.
 
 ---
 
@@ -22,7 +21,8 @@ An enterprise-grade full-stack web application for dispatchers and fleet manager
 | **Backend Runtime** | Node.js (v20+) | High-throughput asynchronous I/O and fast execution. |
 | **HTTP Framework** | Express 4.x with Morgan & CORS | Lightweight, unopinionated, enterprise REST API standard. |
 | **Database** | PostgreSQL 16 | ACID-compliant relational storage, strict constraints, robust indexing, and schema migrations. |
-| **Cache** | Redis 7 (via `ioredis`) | Microsecond-latency key-value storage for read-heavy fleet queries, reduces DB load by >90%. |
+| **Database Client** | `pg` (`pg.Pool`) | Native connection pooling with SSL support for cloud databases. |
+| **Cache Client** | Redis 7 (`ioredis`) | Microsecond-latency key-value storage for read-heavy fleet queries, reduces DB load by >90%. |
 | **Validation** | Zod | Runtime schema validation for query parameters and JSON payloads. |
 | **Frontend** | React 18, Vite, Tailwind CSS | Instant HMR, buttery smooth velvety transitions, and creamy palette typography. |
 | **Testing** | Jest & Supertest | Automated integration testing for HTTP APIs, error edge cases, and cache consistency. |
@@ -37,6 +37,9 @@ delivery-agent-system/
 ├── package.json                    # Root script orchestrator (concurrent dev, test, build)
 ├── .env.example                    # Documented environment configuration template
 ├── README.md                       # Comprehensive documentation & evaluation guide
+├── DEPLOYMENT.md                   # Production deployment guide (Vercel + Render)
+├── render.yaml                     # Render infrastructure blueprint specification
+├── vercel.json                     # Vercel deployment configuration
 │
 ├── backend/                        # Node.js REST API
 │   ├── src/
@@ -91,7 +94,8 @@ delivery-agent-system/
 ### Prerequisites
 - **Node.js**: v18.0.0 or higher
 - **npm**: v9.0.0 or higher
-- *(Optional)* **Docker & Docker Compose** for running standalone PostgreSQL & Redis containers.
+- **PostgreSQL**: Local installation, Docker container, or managed cloud instance (e.g. Render, Supabase).
+- *(Optional)* **Redis**: Local installation, Docker container, or cloud instance (Upstash).
 
 ---
 
@@ -105,37 +109,53 @@ npm run install:all
 
 ---
 
-### Step 2: Start PostgreSQL & Redis via Docker
+### Step 2: Configure Environment Variables
 
-Spin up local PostgreSQL 16 and Redis 7 containers:
+Create a `.env` file in the project root (or inside `backend/.env`):
+
 ```bash
-npm run docker:up
+PORT=5000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:3000
+
+# PostgreSQL Connection String
+DATABASE_URL=postgresql://postgres:password@localhost:5432/delivery_db
+
+# Redis Connection String
+REDIS_URL=redis://localhost:6379
 ```
 
-*(Alternatively, provide connection URLs for your existing PostgreSQL and Redis instances in your `.env` file).*
+> **Tip for Passwords with Special Characters**:  
+> If your database password contains characters like `@`, `#`, or `/`, URL-encode them (e.g. `@` becomes `%40`). Example:
+> `postgresql://postgres:MyPass%4005@localhost:5432/delivery_db`
 
 ---
 
-### Step 3: Create Database Tables (one-time setup)
+### Step 3: Create Database Tables
 
-Create the required PostgreSQL tables using the provided schema script:
+Ensure your database (e.g. `delivery_db`) exists, then execute the schema script:
 
 ```bash
 psql <YOUR_DATABASE_URL> -f backend/src/db/schema.sql
 ```
 
-Or connect to your database directly (e.g., via `psql` or pgAdmin) and execute the SQL statements in [`backend/src/db/schema.sql`](backend/src/db/schema.sql).
+*(Alternatively, open [`backend/src/db/schema.sql`](backend/src/db/schema.sql) in pgAdmin, DBeaver, or psql and run the SQL statements directly).*
 
-Seed realistic delivery agents into the database (optional CLI helper):
+---
+
+### Step 4: (Optional) Seed Demo Data
+
+Load 10 realistic delivery agents with diverse statuses, ratings, and vehicle types:
+
 ```bash
 npm run db:seed
 ```
 
 ---
 
-### Step 4: Start the Application
+### Step 5: Start the Application
 
-To launch both the backend API and the frontend concurrently:
+Launch both the backend API and frontend concurrently:
 ```bash
 npm run dev
 ```
@@ -149,7 +169,7 @@ npm run dev
 
 ## 🧪 Running Automated Tests
 
-A comprehensive integration test suite verifies all CRUD operations, status code handling, validation edge cases, and Redis cache invalidation:
+Run the complete integration test suite verifying CRUD operations, status code handling, validation rules, and Redis cache invalidation against your PostgreSQL database:
 
 ```bash
 npm test
@@ -270,7 +290,7 @@ The frontend includes a **Redis Caching Layer Monitor** that displays:
 
 ## 🎨 UI & Aesthetic Design ("Smooth and Creamy")
 
-The user requested a **smooth and creamy** aesthetic:
+The application features a **smooth and creamy** design language:
 - **Color Palette**:
   - Background: Luxe warm milk cream (`#FAF8F5`)
   - Surfaces & Cards: Soft ivory with velvety borders (`#EDE4D8` / `#E1D3C1`)
@@ -294,8 +314,7 @@ NODE_ENV=development
 CORS_ORIGIN=http://localhost:3000
 
 # PostgreSQL Configuration
-# Connection string takes priority. Tables must be created manually via schema.sql.
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/delivery_db
+DATABASE_URL=postgresql://postgres:password@localhost:5432/delivery_db
 
 # Redis Configuration
 REDIS_URL=redis://localhost:6379
@@ -308,12 +327,13 @@ REDIS_CACHE_TTL_STATS=180
 
 ---
 
-## 📝 Git Submission Checklist
+## 📝 Submission Checklist
 
 - [x] Initialized Git repository on Desktop at `delivery-agent-system`.
-- [x] Node.js REST API with full CRUD operations.
-- [x] PostgreSQL database schema (`backend/src/db/schema.sql`) — run once to set up tables.
+- [x] Pure JavaScript codebase (Node.js Express + React 18 Vite).
+- [x] PostgreSQL database schema (`backend/src/db/schema.sql`) with performance indexes.
 - [x] Redis caching with Cache-Aside strategy and explicit cache invalidation.
 - [x] Smooth and creamy frontend UI with React, Vite, and Tailwind CSS.
-- [x] Automated test suite passing 100% of tests.
-- [x] README with complete setup, run, and evaluation instructions.
+- [x] Automated test suite passing 100% of tests against PostgreSQL.
+- [x] Complete deployment guide for Vercel + Render in `DEPLOYMENT.md`.
+- [x] Comprehensive README with setup, run, and evaluation instructions.
