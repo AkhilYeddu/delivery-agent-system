@@ -3,242 +3,131 @@ const { config } = require('./env');
 
 let hitsCount = 0;
 let missesCount = 0;
+let redisClient = null;
 
-// --- MemoryCacheClient: in-memory fallback when Redis is unavailable ---
+function getRedisClient() {
+  if (!redisClient) {
+    redisClient = new Redis(config.redis.url, {
+      maxRetriesPerRequest: 3,
+      connectTimeout: 5000,
+      retryStrategy: (times) => Math.min(times * 500, 3000),
+      lazyConnect: false,
+    });
 
-function createMemoryCacheClient() {
-  const store = new Map();
+    redisClient.on('connect', () => {
+      console.log('[Redis] Connected successfully to Redis server.');
+    });
 
-  function recordHit() {
-    hitsCount++;
+    redisClient.on('error', (err) => {
+      console.error(`[Redis] Connection error: ${err.message}`);
+    });
   }
 
-  function recordMiss() {
-    missesCount++;
-  }
-
-  async function get(key) {
-    const item = store.get(key);
-    if (!item) {
-      recordMiss();
-      return null;
-    }
-    if (item.expiresAt && Date.now() > item.expiresAt) {
-      store.delete(key);
-      recordMiss();
-      return null;
-    }
-    recordHit();
-    return item.value;
-  }
-
-  async function set(key, value, ttlSeconds) {
-    const expiresAt = ttlSeconds ? Date.now() + ttlSeconds * 1000 : null;
-    store.set(key, { value, expiresAt });
-  }
-
-  async function del(key) {
-    store.delete(key);
-  }
-
-  async function delByPattern(pattern) {
-    const regexPattern = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-    let deletedCount = 0;
-    for (const key of store.keys()) {
-      if (regexPattern.test(key)) {
-        store.delete(key);
-        deletedCount++;
-      }
-    }
-    return deletedCount;
-  }
-
-  async function flush() {
-    store.clear();
-  }
-
-  function isReady() {
-    return true;
-  }
-
-  function getClientType() {
-    return 'memory-fallback';
-  }
-
-  async function getStats() {
-    const total = hitsCount + missesCount;
-    const hitRate = total === 0 ? '0.0%' : ((hitsCount / total) * 100).toFixed(1) + '%';
-    return {
-      status: 'fallback',
-      type: 'In-Memory Cache (Redis Standby)',
-      hits: hitsCount,
-      misses: missesCount,
-      hitRate,
-      keysCount: store.size,
-      latencyMs: 0.1,
-    };
-  }
-
-  return { get, set, del, delByPattern, flush, isReady, getClientType, getStats };
+  return redisClient;
 }
 
-// --- RedisCacheClient: wraps a live ioredis connection ---
-
-function createRedisCacheClient(redisInstance) {
-  let connected = false;
-
-  redisInstance.on('connect', () => {
-    connected = true;
-    console.log('[Redis] Connected successfully to Redis server.');
-  });
-
-  redisInstance.on('error', (err) => {
-    connected = false;
-    console.warn(`[Redis] Connection warning: ${err.message}`);
-  });
-
-  function recordHit() {
-    hitsCount++;
-  }
-
-  function recordMiss() {
-    missesCount++;
-  }
-
-  async function get(key) {
-    try {
-      const val = await redisInstance.get(key);
-      if (val !== null) {
-        recordHit();
-      } else {
-        recordMiss();
-      }
-      return val;
-    } catch {
-      recordMiss();
-      return null;
-    }
-  }
-
-  async function set(key, value, ttlSeconds) {
-    try {
-      if (ttlSeconds) {
-        await redisInstance.set(key, value, 'EX', ttlSeconds);
-      } else {
-        await redisInstance.set(key, value);
-      }
-    } catch (err) {
-      console.warn(`[Redis] Failed to set key ${key}: ${err.message}`);
-    }
-  }
-
-  async function del(key) {
-    try {
-      await redisInstance.del(key);
-    } catch (err) {
-      console.warn(`[Redis] Failed to delete key ${key}: ${err.message}`);
-    }
-  }
-
-  async function delByPattern(pattern) {
-    try {
-      const keys = await redisInstance.keys(pattern);
-      if (keys.length > 0) {
-        await redisInstance.del(...keys);
-      }
-      return keys.length;
-    } catch (err) {
-      console.warn(`[Redis] Pattern delete failed: ${err.message}`);
-      return 0;
-    }
-  }
-
-  async function flush() {
-    try {
-      await redisInstance.flushdb();
-    } catch (err) {
-      console.warn(`[Redis] Flush failed: ${err.message}`);
-    }
-  }
-
-  function isReady() {
-    return connected && redisInstance.status === 'ready';
-  }
-
-  function getClientType() {
-    return 'redis';
-  }
-
-  async function getStats() {
-    const total = hitsCount + missesCount;
-    const hitRate = total === 0 ? '0.0%' : ((hitsCount / total) * 100).toFixed(1) + '%';
-    const start = Date.now();
-    let keysCount = 0;
-    try {
-      keysCount = await redisInstance.dbsize();
-    } catch {
-      keysCount = 0;
-    }
-    const latency = Date.now() - start;
-
-    return {
-      status: isReady() ? 'connected' : 'disconnected',
-      type: 'Redis Server 7.x',
-      hits: hitsCount,
-      misses: missesCount,
-      hitRate,
-      keysCount,
-      latencyMs: latency,
-    };
-  }
-
-  return { get, set, del, delByPattern, flush, isReady, getClientType, getStats };
+function recordHit() {
+  hitsCount++;
 }
 
-// --- getCache: singleton factory ---
+function recordMiss() {
+  missesCount++;
+}
 
-let activeCacheClient = null;
+async function get(key) {
+  try {
+    const val = await getRedisClient().get(key);
+    if (val !== null) {
+      recordHit();
+    } else {
+      recordMiss();
+    }
+    return val;
+  } catch (err) {
+    console.warn(`[Redis] get failed for key "${key}": ${err.message}`);
+    recordMiss();
+    return null;
+  }
+}
+
+async function set(key, value, ttlSeconds) {
+  try {
+    const client = getRedisClient();
+    if (ttlSeconds) {
+      await client.set(key, value, 'EX', ttlSeconds);
+    } else {
+      await client.set(key, value);
+    }
+  } catch (err) {
+    console.warn(`[Redis] set failed for key "${key}": ${err.message}`);
+  }
+}
+
+async function del(key) {
+  try {
+    await getRedisClient().del(key);
+  } catch (err) {
+    console.warn(`[Redis] del failed for key "${key}": ${err.message}`);
+  }
+}
+
+async function delByPattern(pattern) {
+  try {
+    const client = getRedisClient();
+    const keys = await client.keys(pattern);
+    if (keys.length > 0) {
+      await client.del(...keys);
+    }
+    return keys.length;
+  } catch (err) {
+    console.warn(`[Redis] delByPattern failed for pattern "${pattern}": ${err.message}`);
+    return 0;
+  }
+}
+
+async function flush() {
+  try {
+    await getRedisClient().flushdb();
+  } catch (err) {
+    console.warn(`[Redis] flush failed: ${err.message}`);
+  }
+}
+
+function isReady() {
+  return redisClient !== null && redisClient.status === 'ready';
+}
+
+async function getStats() {
+  const total = hitsCount + missesCount;
+  const hitRate = total === 0 ? '0.0%' : ((hitsCount / total) * 100).toFixed(1) + '%';
+  const start = Date.now();
+  let keysCount = 0;
+  try {
+    keysCount = await getRedisClient().dbsize();
+  } catch {
+    keysCount = 0;
+  }
+
+  return {
+    status: isReady() ? 'connected' : 'connecting',
+    type: 'Redis Server 7.x',
+    hits: hitsCount,
+    misses: missesCount,
+    hitRate,
+    keysCount,
+    latencyMs: Date.now() - start,
+  };
+}
 
 function getCache() {
-  if (activeCacheClient) {
-    return activeCacheClient;
-  }
+  return { get, set, del, delByPattern, flush, isReady, getStats };
+}
 
-  // During automated tests without an explicit external Redis instance, use fast in-memory cache
-  if (process.env.NODE_ENV === 'test' && !process.env.FORCE_EXTERNAL_REDIS) {
-    activeCacheClient = createMemoryCacheClient();
-    return activeCacheClient;
-  }
-
-  try {
-    const redisInstance = new Redis(config.redis.url, {
-      maxRetriesPerRequest: 1,
-      connectTimeout: 2000,
-      retryStrategy: (times) => {
-        if (times > 2) {
-          return null; // Stop retrying after 2 attempts, allow fallback
-        }
-        return 1000;
-      },
-      lazyConnect: true,
-    });
-
-    redisInstance.connect().catch((err) => {
-      console.warn(`[Redis] External Redis connection failed (${err.message}). Using in-memory cache.`);
-      if (config.redis.useMemoryFallback) {
-        activeCacheClient = createMemoryCacheClient();
-      }
-    });
-
-    activeCacheClient = createRedisCacheClient(redisInstance);
-    return activeCacheClient;
-  } catch (err) {
-    console.warn(`[Redis] Initialization error: ${err.message}. Using in-memory fallback.`);
-    activeCacheClient = createMemoryCacheClient();
-    return activeCacheClient;
+async function closeRedis() {
+  if (redisClient) {
+    await redisClient.quit();
+    redisClient = null;
   }
 }
 
-module.exports = {
-  getCache,
-};
+module.exports = { getCache, closeRedis };

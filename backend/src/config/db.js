@@ -1,148 +1,67 @@
 const { Pool } = require('pg');
-const { newDb } = require('pg-mem');
-const fs = require('fs');
-const path = require('path');
 const { config } = require('./env');
 
-let activeDb = null;
+let pool = null;
 
-// --- PgPoolClient: wraps a real pg Pool ---
-
-function createPgPoolClient(pool) {
-  async function query(text, params) {
-    return pool.query(text, params);
-  }
-
-  async function end() {
-    await pool.end();
-  }
-
-  function getType() {
-    return 'postgres';
-  }
-
-  async function checkHealth() {
-    const start = Date.now();
-    try {
-      await pool.query('SELECT 1');
-      return { isConnected: true, type: 'PostgreSQL Server', latencyMs: Date.now() - start };
-    } catch {
-      return { isConnected: false, type: 'PostgreSQL Server', latencyMs: Date.now() - start };
-    }
-  }
-
-  return { query, end, getType, checkHealth };
-}
-
-// --- PgMemClient: wraps an in-memory pg-mem instance ---
-
-function createPgMemClient(memDb) {
-  const adapter = memDb.adapters.createPg();
-
-  async function query(text, params) {
-    const pool = new adapter.Pool();
-    try {
-      return await pool.query(text, params);
-    } finally {
-      await pool.end();
-    }
-  }
-
-  async function end() {
-    // In-memory db doesn't require socket shutdown
-  }
-
-  function getType() {
-    return 'in-memory-postgres';
-  }
-
-  async function checkHealth() {
-    const start = Date.now();
-    try {
-      await query('SELECT 1');
-      return { isConnected: true, type: 'In-Memory PostgreSQL Engine', latencyMs: Date.now() - start };
-    } catch {
-      return { isConnected: false, type: 'In-Memory PostgreSQL Engine', latencyMs: Date.now() - start };
-    }
-  }
-
-  return { query, end, getType, checkHealth };
-}
-
-// --- getDb: singleton factory ---
-
-async function getDb() {
-  if (activeDb) {
-    return activeDb;
-  }
-
-  // In test environment without explicit external DB override, prefer in-memory for speed and isolation
-  if (process.env.NODE_ENV === 'test' && !process.env.FORCE_EXTERNAL_DB) {
-    const memDb = newDb();
-    activeDb = createPgMemClient(memDb);
-    const schemaPath = path.resolve(__dirname, '../db/schema.sql');
-    if (fs.existsSync(schemaPath)) {
-      const sql = fs.readFileSync(schemaPath, 'utf-8');
-      await activeDb.query(sql);
-    }
-    return activeDb;
-  }
-
-  // Attempt real PostgreSQL connection
+function createPool() {
   const isProduction = process.env.NODE_ENV === 'production';
-  const isLocalDb = config.database.url.includes('localhost') || config.database.url.includes('127.0.0.1');
+  const isLocalDb =
+    config.database.url.includes('localhost') || config.database.url.includes('127.0.0.1');
 
-  const pool = new Pool({
+  return new Pool({
     connectionString: config.database.url,
-    ssl: (isProduction && !isLocalDb) ? { rejectUnauthorized: false } : undefined,
+    ssl: isProduction && !isLocalDb ? { rejectUnauthorized: false } : undefined,
     connectionTimeoutMillis: 10000,
     max: 10,
     idleTimeoutMillis: 30000,
   });
+}
 
-  try {
-    const client = await pool.connect();
-    await client.query('SELECT 1');
-    client.release();
-    console.log('[Database] Connected successfully to external PostgreSQL server.');
-    activeDb = createPgPoolClient(pool);
-    return activeDb;
-  } catch (err) {
-    await pool.end().catch(() => {});
-    console.warn(`[Database] External PostgreSQL not reachable (${err.message}).`);
-
-    if (config.database.usePgliteFallback) {
-      console.log('[Database] Activating fast In-Memory PostgreSQL engine for standalone operation.');
-      const memDb = newDb();
-      activeDb = createPgMemClient(memDb);
-
-      // Auto-run schema migrations on fallback database
-      try {
-        const schemaPath = path.resolve(__dirname, '../db/schema.sql');
-        if (fs.existsSync(schemaPath)) {
-          const sql = fs.readFileSync(schemaPath, 'utf-8');
-          await activeDb.query(sql);
-          console.log('[Database] Initialized schema on in-memory PostgreSQL engine successfully.');
-        }
-      } catch (schemaErr) {
-        console.error('[Database] Failed to initialize schema:', schemaErr);
-      }
-
-      return activeDb;
-    } else {
-      throw new Error(`Failed to connect to PostgreSQL: ${err.message}`);
-    }
+async function getDb() {
+  if (!pool) {
+    pool = createPool();
   }
+
+  return {
+    async query(text, params) {
+      return pool.query(text, params);
+    },
+
+    async end() {
+      await pool.end();
+      pool = null;
+    },
+
+    getType() {
+      return 'postgres';
+    },
+
+    async checkHealth() {
+      const start = Date.now();
+      try {
+        await pool.query('SELECT 1');
+        return {
+          isConnected: true,
+          type: 'PostgreSQL',
+          latencyMs: Date.now() - start,
+        };
+      } catch (err) {
+        return {
+          isConnected: false,
+          type: 'PostgreSQL',
+          latencyMs: Date.now() - start,
+          error: err.message,
+        };
+      }
+    },
+  };
 }
 
 async function closeDb() {
-  if (activeDb) {
-    await activeDb.end();
-    activeDb = null;
+  if (pool) {
+    await pool.end();
+    pool = null;
   }
 }
 
-module.exports = {
-  getDb,
-  closeDb,
-};
+module.exports = { getDb, closeDb };

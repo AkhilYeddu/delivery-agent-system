@@ -13,14 +13,12 @@
     "test:coverage": "jest --runInBand --coverage"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.2.14",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "ioredis": "^5.4.2",
     "morgan": "^1.10.0",
     "pg": "^8.13.1",
-    "pg-mem": "^3.0.14",
     "uuid": "^11.0.5",
     "zod": "^3.24.1"
   },

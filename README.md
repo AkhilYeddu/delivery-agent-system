@@ -7,9 +7,9 @@ An enterprise-grade full-stack web application for dispatchers and fleet manager
 ## 🌟 Highlights & Architecture
 
 - **Backend**: Node.js & Express, structured into clean Service-Controller-Model layers with strict Zod runtime request validation.
-- **Database**: PostgreSQL with transactional DDL schema, foreign key constraints, check constraints, and performance indexes.
+- **Database**: PostgreSQL with transactional DDL schema (`schema.sql`), foreign key constraints, check constraints, and performance indexes.
 - **Caching Layer**: Redis Cache-Aside pattern with deterministic key namespacing, explicit invalidation on mutations (create/update/delete), TTL management, and `X-Cache: HIT / MISS` response headers.
-- **Fallback / Standalone Capability**: Can run against external PostgreSQL and Redis instances (via `docker compose up -d`) OR run standalone with embedded in-memory PostgreSQL (`pg-mem`) and fallback cache so evaluators can run the project immediately with zero external dependencies.
+- **Production Architecture**: Direct connection pooling to PostgreSQL via `pg` and high-performance Redis caching via `ioredis`. Run locally with Docker (`npm run docker:up`) or against cloud-managed instances (e.g. Render PostgreSQL + Upstash Redis).
 - **Frontend**: Smooth and creamy UI built with React, Vite, and custom warm cream/caramel Tailwind styling, featuring live Redis telemetry, fleet statistics cards, table/grid views, debounced search, status filters, and instant action modals.
 - **Automated Tests**: Comprehensive Jest & Supertest integration suite verifying all CRUD operations, input validations, conflict handling, and Redis cache invalidation behaviors.
 
@@ -42,8 +42,8 @@ delivery-agent-system/
 │   ├── src/
 │   │   ├── config/
 │   │   │   ├── env.js              # Centralized environment configuration
-│   │   │   ├── db.js               # PostgreSQL connection pool with fallback
-│   │   │   └── redis.js            # Redis client & telemetry with memory standby
+│   │   │   ├── db.js               # PostgreSQL connection pool (pg.Pool)
+│   │   │   └── redis.js            # Redis client & telemetry (ioredis)
 │   │   ├── controllers/
 │   │   │   └── agent.controller.js # Request handlers & header setting
 │   │   ├── services/
@@ -55,7 +55,6 @@ delivery-agent-system/
 │   │   │   └── telemetry.routes.js # Health & cache telemetry endpoints
 │   │   ├── db/
 │   │   │   ├── schema.sql          # PostgreSQL DDL schema & indexes
-│   │   │   ├── migrate.js          # Migration runner
 │   │   │   └── seed.js             # 10 realistic delivery agents seed data
 │   │   ├── middlewares/
 │   │   │   ├── error.middleware.js  # Standardized error formatting
@@ -106,31 +105,28 @@ npm run install:all
 
 ---
 
-### Step 2: (Optional) Start PostgreSQL & Redis via Docker
+### Step 2: Start PostgreSQL & Redis via Docker
 
-If Docker is installed on your machine, you can spin up PostgreSQL 16 and Redis 7 in seconds:
+Spin up local PostgreSQL 16 and Redis 7 containers:
 ```bash
 npm run docker:up
 ```
 
-> **Note on Standalone / Offline Evaluation**:  
-> If Docker or local PostgreSQL/Redis servers are not running, the application **automatically activates** its built-in in-memory PostgreSQL engine and memory-backed cache. You can test and run the entire system immediately without installing any external database servers!
+*(Alternatively, provide connection URLs for your existing PostgreSQL and Redis instances in your `.env` file).*
 
 ---
 
 ### Step 3: Create Database Tables (one-time setup)
 
-The app does **not** run migrations automatically. Run the provided SQL schema once against your PostgreSQL database before starting the app:
+Create the required PostgreSQL tables using the provided schema script:
 
 ```bash
 psql <YOUR_DATABASE_URL> -f backend/src/db/schema.sql
 ```
 
-Or connect to your database directly and paste the contents of [`backend/src/db/schema.sql`](backend/src/db/schema.sql).
+Or connect to your database directly (e.g., via `psql` or pgAdmin) and execute the SQL statements in [`backend/src/db/schema.sql`](backend/src/db/schema.sql).
 
-> **Standalone / no-database mode**: If you are running without a local PostgreSQL instance, skip this step entirely. The app automatically activates its built-in in-memory PostgreSQL engine which initialises the schema itself.
-
-Seed realistic delivery agents into the database (optional — the server also auto-seeds on first boot if the table is empty):
+Seed realistic delivery agents into the database (optional CLI helper):
 ```bash
 npm run db:seed
 ```
@@ -252,7 +248,6 @@ The frontend includes a **Redis Caching Layer Monitor** that displays:
 | `PATCH`| `/agents/:id` | Partially update delivery agent | `200`, `400`, `404`, `409` |
 | `DELETE`| `/agents/:id`| Remove delivery agent | `200`, `404` |
 | `GET` | `/agents/stats`| Fleet metrics (counts by status, vehicle, area, rating) | `200` |
-| `POST`| `/agents/seed` | Seed realistic demo agents | `200` |
 | `GET` | `/health` | Server, PostgreSQL, and Redis health status | `200` |
 | `GET` | `/cache/stats` | Redis hit/miss counters and latency metrics | `200` |
 | `POST`| `/cache/flush` | Evict all cached keys | `200` |
@@ -299,20 +294,16 @@ NODE_ENV=development
 CORS_ORIGIN=http://localhost:3000
 
 # PostgreSQL Configuration
+# Connection string takes priority. Tables must be created manually via schema.sql.
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/delivery_db
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=delivery_db
-USE_PGLITE_FALLBACK=true
 
 # Redis Configuration
 REDIS_URL=redis://localhost:6379
+
+# Redis Cache TTL (in seconds)
 REDIS_CACHE_TTL_LIST=300
 REDIS_CACHE_TTL_DETAIL=600
 REDIS_CACHE_TTL_STATS=180
-USE_MEMORY_CACHE_FALLBACK=true
 ```
 
 ---

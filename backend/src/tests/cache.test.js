@@ -1,6 +1,7 @@
 const request = require('supertest');
 const { createApp } = require('../app');
 const { closeDb } = require('../config/db');
+const { closeRedis } = require('../config/redis');
 const { AgentService } = require('../services/agent.service');
 
 const app = createApp();
@@ -8,6 +9,7 @@ const app = createApp();
 describe('Redis Caching & Invalidation Integration Tests', () => {
   afterAll(async () => {
     await closeDb();
+    await closeRedis();
   });
 
   test('Cache-Aside: List response is cached and served with X-Cache: HIT on second request', async () => {

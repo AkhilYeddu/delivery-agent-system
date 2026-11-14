@@ -64,10 +64,5 @@ export const agentApi = {
     const response = await api.post('/cache/flush');
     return response.data;
   },
-
-  async seedDemoAgents() {
-    const response = await api.post('/agents/seed');
-    return response.data;
-  },
 };
 

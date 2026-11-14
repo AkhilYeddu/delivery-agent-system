@@ -1,6 +1,7 @@
 const request = require('supertest');
 const { createApp } = require('../app');
 const { closeDb } = require('../config/db');
+const { closeRedis } = require('../config/redis');
 
 const app = createApp();
 
@@ -10,6 +11,7 @@ describe('Delivery Agent API - CRUD Flow', () => {
 
   afterAll(async () => {
     await closeDb();
+    await closeRedis();
   });
 
   test('POST /api/agents - should successfully create a new delivery agent', async () => {

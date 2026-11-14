@@ -101,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_delivery_agents_created_at ON delivery_agents(cre
 > psql <YOUR_DATABASE_URL> -f backend/src/db/schema.sql
 > ```
 
-Once the tables exist, the API will start and **auto-seed sample data** on first boot if the table is empty.
+Once the tables exist, the API will connect and start immediately. You can optionally seed sample agents by running `npm run db:seed`.
 
 ---
 
@@ -136,9 +136,7 @@ If you prefer configuring via the Render UI:
    - `PORT` = `10000`
    - `CORS_ORIGIN` = `*`
    - `DATABASE_URL` = *(Paste your Internal Database URL from Step 1)*
-   - `USE_PGLITE_FALLBACK` = `true`
-   - `USE_MEMORY_CACHE_FALLBACK` = `true`
-   - *(Optional Redis)*: If using [Upstash Redis](https://upstash.com/) or Render Redis, set `REDIS_URL`.
+   - `REDIS_URL` = *(Optional: Paste your Redis URL from Upstash or Render Redis)*
 5. Click **Create Web Service**.
 6. Once deployed, verify by opening: `https://<YOUR-RENDER-API-URL>/api/health`.
 
@@ -188,8 +186,6 @@ If you prefer configuring via the Render UI:
 | `CORS_ORIGIN` | `*` (or your Vercel URL e.g. `https://my-app.vercel.app`) |
 | `DATABASE_URL` | PostgreSQL connection string from Render DB |
 | `REDIS_URL` | *(Optional)* Redis connection string (Upstash or Render Redis) |
-| `USE_PGLITE_FALLBACK` | `true` (Graceful fallback if DB drops) |
-| `USE_MEMORY_CACHE_FALLBACK` | `true` (Ensures 100% cache uptime) |
 
 ### Vercel Frontend
 | Variable | Value / Purpose |

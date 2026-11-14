@@ -21,10 +21,6 @@ services:
         fromDatabase:
           name: swiftdispatch-db
           property: connectionString
-      - key: USE_PGLITE_FALLBACK
-        value: "true"
-      - key: USE_MEMORY_CACHE_FALLBACK
-        value: "true"
 
 databases:
   # ----------------------------------------------------------------------------

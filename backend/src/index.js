@@ -1,34 +1,26 @@
 const { createApp } = require('./app');
 const { config } = require('./config/env');
-const { getDb } = require('./config/db');
-const { getCache } = require('./config/redis');
-const { seedSampleAgents } = require('./db/seed');
+const { getDb, closeDb } = require('./config/db');
+const { getCache, closeRedis } = require('./config/redis');
 
 async function bootstrap() {
   const app = createApp();
 
-  // Initialize DB and Cache connections
-  console.log('[Bootstrap] Initializing database and cache connections...');
+  // Verify DB connection on startup
+  console.log('[Bootstrap] Connecting to PostgreSQL...');
   const db = await getDb();
   const dbHealth = await db.checkHealth();
+  if (!dbHealth.isConnected) {
+    console.error('[Bootstrap] Could not connect to PostgreSQL:', dbHealth.error);
+    process.exit(1);
+  }
   console.log(`[Bootstrap] Database ready: ${dbHealth.type} (Latency: ${dbHealth.latencyMs}ms)`);
 
+  // Verify Redis connection on startup
+  console.log('[Bootstrap] Connecting to Redis...');
   const cache = getCache();
   const cacheStats = await cache.getStats();
   console.log(`[Bootstrap] Cache ready: ${cacheStats.type} (Status: ${cacheStats.status})`);
-
-  // Auto-seed if database is currently empty
-  try {
-    const countCheck = await db.query('SELECT COUNT(*)::int as count FROM delivery_agents');
-    const count = countCheck.rows[0]?.count || 0;
-    if (count === 0) {
-      console.log('[Bootstrap] Database is empty. Seeding realistic sample agents for demonstration...');
-      await seedSampleAgents();
-      console.log('[Bootstrap] Sample data seeded successfully.');
-    }
-  } catch (err) {
-    console.warn('[Bootstrap] Auto-seed check skipped or failed:', err.message);
-  }
 
   // Start HTTP Server
   const server = app.listen(config.port, () => {
@@ -59,7 +51,9 @@ async function bootstrap() {
   const shutdown = async () => {
     console.log('\n[Server] Gracefully shutting down...');
     server.close(async () => {
-      console.log('[Server] HTTP server closed.');
+      await closeDb();
+      await closeRedis();
+      console.log('[Server] Connections closed. Goodbye.');
       process.exit(0);
     });
   };
@@ -75,6 +69,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = {
-  bootstrap,
-};
+module.exports = { bootstrap };
