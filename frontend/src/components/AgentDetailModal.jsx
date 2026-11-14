@@ -6,8 +6,6 @@ import {
   MapPin,
   Calendar,
   Clock,
-  Award,
-  Truck,
   Edit3,
   Trash2,
   Database,
@@ -26,26 +24,40 @@ export const AgentDetailModal = ({
   if (!isOpen || !agent) return null;
 
   const formatDate = (dateStr) => {
+    if (!dateStr) return 'Recently';
     try {
       return new Date(dateStr).toLocaleString('en-US', {
         dateStyle: 'medium',
         timeStyle: 'short',
       });
     } catch {
-      return dateStr;
+      return String(dateStr);
     }
   };
 
-  const initials = agent.full_name
+  const fullName = agent.full_name || 'Delivery Agent';
+  const initials = fullName
     .split(' ')
+    .filter(Boolean)
     .map((n) => n[0])
     .join('')
     .substring(0, 2)
-    .toUpperCase();
+    .toUpperCase() || 'AG';
+
+  const vehicleType = agent.vehicle_type || 'bike';
+  const status = agent.status || 'active';
+  const rating = Number(agent.rating || 5.0).toFixed(1);
+  const completedDeliveries = agent.completed_deliveries ?? 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cream-950/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl border border-cream-200 shadow-creamy-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-cream-950/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl border border-cream-200 shadow-creamy-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="px-6 py-5 border-b border-cream-200 bg-cream-50/60 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -83,9 +95,9 @@ export const AgentDetailModal = ({
             <div className="flex-1">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-xl font-bold text-cream-950 font-display">
-                  {agent.full_name}
+                  {fullName}
                 </h3>
-                {getStatusBadge(agent.status)}
+                {getStatusBadge(status)}
               </div>
               <p className="text-xs font-mono text-cream-500 mt-1">
                 ID: <strong>{agent.id}</strong>
@@ -101,7 +113,7 @@ export const AgentDetailModal = ({
               </span>
               <div className="text-lg font-bold text-cream-950 mt-0.5 flex items-center justify-center gap-1">
                 <span className="text-amber-500">★</span>
-                <span>{Number(agent.rating).toFixed(1)}</span>
+                <span>{rating}</span>
               </div>
             </div>
 
@@ -110,7 +122,7 @@ export const AgentDetailModal = ({
                 Deliveries
               </span>
               <div className="text-lg font-bold text-cream-950 mt-0.5">
-                {agent.completed_deliveries}
+                {completedDeliveries}
               </div>
             </div>
 
@@ -119,8 +131,8 @@ export const AgentDetailModal = ({
                 Transport
               </span>
               <div className="text-xs font-bold text-cream-900 mt-1 capitalize truncate flex items-center justify-center gap-1">
-                {getVehicleIcon(agent.vehicle_type)}
-                <span>{agent.vehicle_type.replace('_', ' ')}</span>
+                {getVehicleIcon(vehicleType)}
+                <span>{vehicleType.replace('_', ' ')}</span>
               </div>
             </div>
           </div>
@@ -132,7 +144,7 @@ export const AgentDetailModal = ({
                 <Phone className="w-4 h-4 text-cream-400" />
                 Phone Number
               </span>
-              <span className="font-semibold text-cream-900">{agent.phone}</span>
+              <span className="font-semibold text-cream-900">{agent.phone || 'N/A'}</span>
             </div>
 
             <div className="flex items-center justify-between py-2 border-b border-cream-100">
@@ -140,7 +152,7 @@ export const AgentDetailModal = ({
                 <Mail className="w-4 h-4 text-cream-400" />
                 Email Address
               </span>
-              <span className="font-semibold text-cream-900">{agent.email}</span>
+              <span className="font-semibold text-cream-900">{agent.email || 'N/A'}</span>
             </div>
 
             <div className="flex items-center justify-between py-2 border-b border-cream-100">
@@ -149,7 +161,7 @@ export const AgentDetailModal = ({
                 Service Territory
               </span>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-cream-100 text-cream-800 border border-cream-200">
-                {agent.service_area}
+                {agent.service_area || 'General Area'}
               </span>
             </div>
 
@@ -204,4 +216,3 @@ export const AgentDetailModal = ({
     </div>
   );
 };
-

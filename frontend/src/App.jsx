@@ -119,15 +119,24 @@ export const App = () => {
   };
 
   // Detail view handler
-  const handleViewAgent = async (agent) => {
-    try {
-      const res = await agentApi.getAgentById(agent.id);
-      setAgentToView(res.data);
-      setViewFromCache(res.meta?.fromCache);
-    } catch {
-      setAgentToView(agent);
-      setViewFromCache(undefined);
-    }
+  const handleViewAgent = (agent) => {
+    if (!agent) return;
+    // Immediately open modal with existing agent data (instant response)
+    setAgentToView(agent);
+    setViewFromCache(undefined);
+
+    // Fetch latest profile & cache HIT/MISS status in background
+    agentApi
+      .getAgentById(agent.id)
+      .then((res) => {
+        if (res && res.data) {
+          setAgentToView(res.data);
+          setViewFromCache(res.meta?.fromCache);
+        }
+      })
+      .catch(() => {
+        // Keeps current agent displayed on network error
+      });
   };
 
   // Create or Update handler
