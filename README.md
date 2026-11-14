@@ -118,14 +118,19 @@ npm run docker:up
 
 ---
 
-### Step 3: Run Database Migrations & Seed Demo Data
+### Step 3: Create Database Tables (one-time setup)
 
-Run the migration script to apply the PostgreSQL DDL schema:
+The app does **not** run migrations automatically. Run the provided SQL schema once against your PostgreSQL database before starting the app:
+
 ```bash
-npm run db:migrate
+psql <YOUR_DATABASE_URL> -f backend/src/db/schema.sql
 ```
 
-Seed realistic delivery agents into the database:
+Or connect to your database directly and paste the contents of [`backend/src/db/schema.sql`](backend/src/db/schema.sql).
+
+> **Standalone / no-database mode**: If you are running without a local PostgreSQL instance, skip this step entirely. The app automatically activates its built-in in-memory PostgreSQL engine which initialises the schema itself.
+
+Seed realistic delivery agents into the database (optional — the server also auto-seeds on first boot if the table is empty):
 ```bash
 npm run db:seed
 ```
@@ -316,7 +321,7 @@ USE_MEMORY_CACHE_FALLBACK=true
 
 - [x] Initialized Git repository on Desktop at `delivery-agent-system`.
 - [x] Node.js REST API with full CRUD operations.
-- [x] PostgreSQL database schema with migration and seed scripts.
+- [x] PostgreSQL database schema (`backend/src/db/schema.sql`) — run once to set up tables.
 - [x] Redis caching with Cache-Aside strategy and explicit cache invalidation.
 - [x] Smooth and creamy frontend UI with React, Vite, and Tailwind CSS.
 - [x] Automated test suite passing 100% of tests.

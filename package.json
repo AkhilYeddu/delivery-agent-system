@@ -10,7 +10,6 @@
     "build": "cd backend && npm run build && cd ../frontend && npm run build",
     "test": "cd backend && npm run test",
     "test:coverage": "cd backend && npm run test:coverage",
-    "db:migrate": "cd backend && npm run db:migrate",
     "db:seed": "cd backend && npm run db:seed",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"

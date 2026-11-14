@@ -3,7 +3,6 @@ const { config } = require('./config/env');
 const { getDb } = require('./config/db');
 const { getCache } = require('./config/redis');
 const { seedSampleAgents } = require('./db/seed');
-const { runMigrations } = require('./db/migrate');
 
 async function bootstrap() {
   const app = createApp();
@@ -17,14 +16,6 @@ async function bootstrap() {
   const cache = getCache();
   const cacheStats = await cache.getStats();
   console.log(`[Bootstrap] Cache ready: ${cacheStats.type} (Status: ${cacheStats.status})`);
-
-  // Auto-run schema migrations
-  try {
-    console.log('[Bootstrap] Checking / applying database migrations...');
-    await runMigrations();
-  } catch (err) {
-    console.warn('[Bootstrap] Migration check note:', err.message);
-  }
 
   // Auto-seed if database is currently empty
   try {
@@ -87,4 +78,3 @@ if (require.main === module) {
 module.exports = {
   bootstrap,
 };
-
