@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { CacheTelemetryBadge } from './components/CacheTelemetryBadge';
 import { StatsOverview } from './components/StatsOverview';
@@ -41,6 +41,7 @@ export const App = () => {
   const [agentToView, setAgentToView] = useState(null);
   const [viewFromCache, setViewFromCache] = useState(undefined);
   const [agentToDelete, setAgentToDelete] = useState(null);
+  const activeViewingAgentIdRef = useRef(null);
 
   // Toast notifications
   const [toasts, setToasts] = useState([]);
@@ -119,15 +120,17 @@ export const App = () => {
   // Detail view handler
   const handleViewAgent = (agent) => {
     if (!agent) return;
+    activeViewingAgentIdRef.current = agent.id;
     // Immediately open modal with existing agent data (instant response)
     setAgentToView(agent);
     setViewFromCache(undefined);
 
-    // Fetch latest profile & cache HIT/MISS status in background
+    // Fetch latest profile & cache status in background
     agentApi
       .getAgentById(agent.id)
       .then((res) => {
-        if (res && res.data) {
+        // Only update if user has not closed or switched view away from this agent
+        if (activeViewingAgentIdRef.current === agent.id && res && res.data) {
           setAgentToView(res.data);
           setViewFromCache(res.meta?.fromCache);
         }
@@ -135,6 +138,19 @@ export const App = () => {
       .catch(() => {
         // Keeps current agent displayed on network error
       });
+  };
+
+  const handleCloseView = () => {
+    activeViewingAgentIdRef.current = null;
+    setAgentToView(null);
+    setViewFromCache(undefined);
+  };
+
+  const handleEditAgent = (agent) => {
+    activeViewingAgentIdRef.current = null;
+    setAgentToView(null);
+    setAgentToEdit(agent);
+    setIsFormOpen(true);
   };
 
   // Create or Update handler
@@ -241,10 +257,7 @@ export const App = () => {
             onPageChange={(p) => loadAgents(p, pagination.limit)}
             onLimitChange={(l) => loadAgents(1, l)}
             onView={handleViewAgent}
-            onEdit={(agent) => {
-              setAgentToEdit(agent);
-              setIsFormOpen(true);
-            }}
+            onEdit={handleEditAgent}
             onDelete={(agent) => setAgentToDelete(agent)}
           />
         ) : (
@@ -254,10 +267,7 @@ export const App = () => {
                 key={agent.id}
                 agent={agent}
                 onView={handleViewAgent}
-                onEdit={(a) => {
-                  setAgentToEdit(a);
-                  setIsFormOpen(true);
-                }}
+                onEdit={handleEditAgent}
                 onDelete={(a) => setAgentToDelete(a)}
               />
             ))}
@@ -290,11 +300,8 @@ export const App = () => {
         isOpen={Boolean(agentToView)}
         agent={agentToView}
         fromCache={viewFromCache}
-        onClose={() => setAgentToView(null)}
-        onEdit={(a) => {
-          setAgentToEdit(a);
-          setIsFormOpen(true);
-        }}
+        onClose={handleCloseView}
+        onEdit={handleEditAgent}
         onDelete={(a) => setAgentToDelete(a)}
       />
 

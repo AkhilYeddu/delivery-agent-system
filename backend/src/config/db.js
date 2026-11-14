@@ -37,10 +37,6 @@ async function getDb() {
       }
     },
 
-    getType() {
-      return 'postgres';
-    },
-
     async checkHealth() {
       const start = Date.now();
       try {
@@ -61,6 +57,8 @@ async function getDb() {
     },
   };
 }
+
+
 
 async function closeDb() {
   if (pool) {
